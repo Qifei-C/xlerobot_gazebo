@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    publish_rate_hz: 50.0
+    command_timeout: 0.5
+    max_planar_speed: 0.3
+    max_angular_speed: 1.57079632679
+    max_planar_acceleration: 1.0
+    max_angular_acceleration: 4.0

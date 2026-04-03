@@ -1,0 +1,7 @@
+build
+install
+log
+.git
+*.pyc
+__pycache__
+

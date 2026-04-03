@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+if [[ -z "${DISPLAY:-}" ]]; then
+  echo "DISPLAY 未设置，无法启动 Gazebo GUI。"
+  exit 1
+fi
+
+if command -v xhost >/dev/null 2>&1; then
+  xhost +local:docker >/dev/null 2>&1 || true
+fi
+
+docker compose up --build gazebo
+

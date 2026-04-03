@@ -1,0 +1,20 @@
+# Colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editors
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime artifacts
+*.core
+core.*
