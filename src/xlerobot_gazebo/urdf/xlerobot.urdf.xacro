@@ -172,6 +172,13 @@
       <axis xyz="0 1 0"/>
       <dynamics damping="0.05" friction="0.0"/>
     </joint>
+
+    <!-- Omni-wheel friction: near-zero along axle (roller slide), high perpendicular (drive). -->
+    <gazebo reference="wheel_${index}_link">
+      <mu1>0.001</mu1>
+      <mu2>1.5</mu2>
+      <fdir1>0 1 0</fdir1>
+    </gazebo>
   </xacro:macro>
 
   <xacro:omni_wheel_assembly
