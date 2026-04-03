@@ -42,7 +42,7 @@ def launch_setup(context, *args, **kwargs):
         else os.path.join(pkg_share, "config", "controllers_planar.yaml")
     )
     base_controller_name = (
-        "omni_base_controller" if backend == "omni" else "ideal_base_velocity_controller"
+        "omni_wheel_velocity_controller" if backend == "omni" else "ideal_base_velocity_controller"
     )
 
     robot_description = ParameterValue(
@@ -88,14 +88,14 @@ def launch_setup(context, *args, **kwargs):
     if backend == "omni":
         command_bridge = Node(
             package="xlerobot_gazebo",
-            executable="twist_stamped_relay.py",
+            executable="omni_twist_to_wheels.py",
             output="screen",
             parameters=[
                 os.path.join(pkg_share, "config", "base_geometry.yaml"),
                 os.path.join(pkg_share, "config", "base_envelope_real.yaml"),
                 {
                     "input_topic": "/base/cmd_vel",
-                    "output_topic": "/omni_base_controller/cmd_vel",
+                    "output_topic": "/omni_wheel_velocity_controller/commands",
                     "limited_topic": "/base/cmd_vel_limited",
                 }
             ],
@@ -103,12 +103,16 @@ def launch_setup(context, *args, **kwargs):
 
         odom_bridge = Node(
             package="xlerobot_gazebo",
-            executable="odom_relay.py",
+            executable="omni_wheel_odometry.py",
             output="screen",
             parameters=[
+                os.path.join(pkg_share, "config", "base_geometry.yaml"),
                 {
-                    "input_topic": "/omni_base_controller/odom",
-                    "output_topic": "/odom",
+                    "joint_states_topic": "/joint_states",
+                    "odom_topic": "/odom",
+                    "odom_frame_id": "odom",
+                    "base_frame_id": "base_link",
+                    "publish_tf": True,
                 }
             ],
         )

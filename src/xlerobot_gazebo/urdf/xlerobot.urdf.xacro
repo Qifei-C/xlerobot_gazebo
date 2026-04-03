@@ -158,9 +158,8 @@
         <material name="grey"/>
       </visual>
       <collision>
-        <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
         <geometry>
-          <cylinder radius="${omni_wheel_radius}" length="${omni_wheel_width}"/>
+          <sphere radius="${omni_wheel_radius}"/>
         </geometry>
       </collision>
     </link>
@@ -173,11 +172,12 @@
       <dynamics damping="0.05" friction="0.0"/>
     </joint>
 
-    <!-- Omni-wheel friction: near-zero along axle (roller slide), high perpendicular (drive). -->
+    <!-- Sphere collision with uniform friction simulates omni-wheel rollers:
+         the velocity controller drives the correct wheel speeds while the
+         isotropic contact allows the body to slide in any direction. -->
     <gazebo reference="wheel_${index}_link">
-      <mu1>0.001</mu1>
-      <mu2>1.5</mu2>
-      <fdir1>0 1 0</fdir1>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
     </gazebo>
   </xacro:macro>
 

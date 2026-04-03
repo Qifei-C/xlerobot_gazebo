@@ -6,8 +6,8 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    omni_base_controller:
-      type: omni_wheel_drive_controller/OmniWheelDriveController
+    omni_wheel_velocity_controller:
+      type: forward_command_controller/ForwardCommandController
 
     left_arm_position_controller:
       type: forward_command_controller/ForwardCommandController
@@ -24,24 +24,13 @@ controller_manager:
     head_position_controller:
       type: forward_command_controller/ForwardCommandController
 
-omni_base_controller:
+omni_wheel_velocity_controller:
   ros__parameters:
-    wheel_names:
+    interface_name: velocity
+    joints:
       - wheel_0_joint
       - wheel_1_joint
       - wheel_2_joint
-    wheel_offset: 0.0
-    robot_radius: 0.111
-    wheel_radius: 0.0508
-    odom_frame_id: odom
-    base_frame_id: base_link
-    position_feedback: true
-    open_loop: false
-    enable_odom_tf: true
-    cmd_vel_timeout: 0.5
-    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
-    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
-    publish_limited_velocity: true
 
 left_arm_position_controller:
   ros__parameters:

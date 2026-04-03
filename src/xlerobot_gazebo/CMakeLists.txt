@@ -21,6 +21,8 @@ install(
     scripts/twist_to_planar_cmd.py
     scripts/xlerobot_official_base_adapter.py
     scripts/keyboard_teleop.py
+    scripts/omni_twist_to_wheels.py
+    scripts/omni_wheel_odometry.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
