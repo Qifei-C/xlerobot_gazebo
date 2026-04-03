@@ -20,6 +20,7 @@ install(
     scripts/twist_stamped_relay.py
     scripts/twist_to_planar_cmd.py
     scripts/xlerobot_official_base_adapter.py
+    scripts/keyboard_teleop.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

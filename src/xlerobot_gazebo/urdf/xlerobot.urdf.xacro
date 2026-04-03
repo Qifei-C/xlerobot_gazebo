@@ -178,19 +178,19 @@
     index="0"
     wheel_x="0.0"
     wheel_y="-0.110787"
-    joint_yaw="-1.57079632679"/>
+    joint_yaw="0.0"/>
 
   <xacro:omni_wheel_assembly
     index="1"
     wheel_x="0.096638"
     wheel_y="0.055794"
-    joint_yaw="0.5235987756"/>
+    joint_yaw="2.0943951024"/>
 
   <xacro:omni_wheel_assembly
     index="2"
     wheel_x="-0.095945"
     wheel_y="0.055394"
-    joint_yaw="2.617993878"/>
+    joint_yaw="4.1887902048"/>
 
 
 
