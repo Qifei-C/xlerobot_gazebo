@@ -8,17 +8,29 @@
 - `XLeRobot` 双臂机器人仿真包 `xlerobot_gazebo`
 - `ros2_control` + `gz_ros2_control`
 
-## 目录
+## Repo 结构
 
-- `compose.yml`: GUI / headless 两个容器入口
-- `Dockerfile`: 镜像构建
-- `src/demo_bot_gazebo`: 示例机器人包
-- `src/so101_gazebo`: 基于开源 `SO-ARM100/SO101` 资产的 Gazebo 包
-- `src/xlerobot_gazebo`: 基于开源 `XLeRobot` 资产的 Gazebo 包
-- `scripts/run_gui.sh`: 本地图形界面启动
-- `scripts/run_headless.sh`: 无头模式启动
-- `scripts/run_so101_headless.sh`: 无头启动 `SO101`
-- `scripts/run_xlerobot_headless.sh`: 无头启动 `XLeRobot`
+- `Dockerfile` / `compose.yml`: 容器镜像与运行入口
+- `ros_entrypoint_overlay.sh`: 容器内 ROS 2 工作空间入口
+- `scripts/`: 常用启动脚本
+- `src/demo_bot_gazebo`: 最小示例机器人
+- `src/so101_gazebo`: `SO101` Gazebo 集成包
+- `src/xlerobot_gazebo`: `XLeRobot` Gazebo 主包
+- `THIRD_PARTY.md`: 第三方资产来源说明
+
+精简视图：
+
+```text
+xlerobot_gazebo/
+├── Dockerfile
+├── compose.yml
+├── scripts/
+├── src/
+│   ├── demo_bot_gazebo/
+│   ├── so101_gazebo/
+│   └── xlerobot_gazebo/
+└── THIRD_PARTY.md
+```
 
 ## 构建
 
