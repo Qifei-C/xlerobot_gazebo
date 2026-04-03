@@ -5,6 +5,7 @@ SHELL ["/bin/bash", "-c"]
 ARG DEBIAN_FRONTEND=noninteractive
 ARG USER_UID=1000
 ARG USER_GID=1000
+ARG USERNAME=ros
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -27,18 +28,23 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /workspaces/ws/src "/home/${USERNAME}" \
+    && chown -R "${USER_UID}:${USER_GID}" /workspaces "/home/${USERNAME}"
+
 WORKDIR /workspaces/ws
 
-COPY src /workspaces/ws/src
-COPY ros_entrypoint_overlay.sh /ros_entrypoint_overlay.sh
+COPY --chown=${USER_UID}:${USER_GID} src /workspaces/ws/src
+COPY --chown=${USER_UID}:${USER_GID} ros_entrypoint_overlay.sh /ros_entrypoint_overlay.sh
 
-RUN source /opt/ros/jazzy/setup.bash \
-    && colcon build --symlink-install
+RUN chmod +x /ros_entrypoint_overlay.sh
 
-RUN chown -R "${USER_UID}:${USER_GID}" /workspaces/ws /ros_entrypoint_overlay.sh \
-    && chmod +x /ros_entrypoint_overlay.sh
+ENV HOME=/home/${USERNAME}
+ENV USER=${USERNAME}
 
 USER ${USER_UID}:${USER_GID}
+
+RUN source /opt/ros/jazzy/setup.bash \
+    && colcon build
 
 ENTRYPOINT ["/ros_entrypoint_overlay.sh"]
 CMD ["bash"]

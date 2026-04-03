@@ -311,8 +311,8 @@
     <limit
       lower="-2.1"
       upper="2.1"
-      effort="0"
-      velocity="0" />
+      effort="8.85"
+      velocity="3.14" />
   </joint>
   <link name="Upper_Arm">
     <inertial>
@@ -383,8 +383,8 @@
     <limit
       lower="-0.1"
       upper="3.45"
-      effort="0"
-      velocity="0" />
+      effort="8.85"
+      velocity="3.14" />
   </joint>
   <link name="Lower_Arm">
     <inertial>
@@ -444,7 +444,7 @@
     <parent link="Upper_Arm" />
     <child link="Lower_Arm" />
     <axis xyz="1 0 0" />
-    <limit lower="-0.2" upper="3.14159" effort="0" velocity="0" />
+    <limit lower="-0.2" upper="3.14159" effort="8.85" velocity="3.14" />
   </joint>
   <link name="Wrist_Pitch_Roll">
     <inertial>
@@ -506,8 +506,8 @@
     <limit 
       lower="-1.8"
       upper="1.8"
-      effort="0"
-      velocity="0" />
+      effort="8.85"
+      velocity="3.14" />
   </joint>
   <link name="Fixed_Jaw">
     <inertial>
@@ -544,22 +544,13 @@
       <material name="motor">
       </material>
     </visual>
+    <!-- Simplified collision keeps the gripper movable in Gazebo. -->
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0.008 -0.044 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Fixed_Jaw_part1.ply" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Fixed_Jaw_part2.ply" />
+        <box size="0.026 0.088 0.028" />
       </geometry>
     </collision>
   </link>
@@ -568,7 +559,7 @@
     <parent link="Wrist_Pitch_Roll" />
     <child link="Fixed_Jaw" />
     <axis xyz="0 -1 0" />
-    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <limit lower="-3.14159" upper="3.14159" effort="8.85" velocity="3.14" />
   </joint>
   <link name="Moving_Jaw">
     <inertial>
@@ -598,29 +589,10 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="-0.003 -0.048 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Moving_Jaw_part1.ply" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Moving_Jaw_part2.ply" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Moving_Jaw_part3.ply" />
+        <box size="0.018 0.072 0.02" />
       </geometry>
     </collision>
   </link>
@@ -629,7 +601,8 @@
     <parent link="Fixed_Jaw" />
     <child link="Moving_Jaw" />
     <axis xyz="0 0 1" />
-    <limit lower="0" upper="1.7" effort="0" velocity="0" />
+    <dynamics damping="0.2" friction="0.0" />
+    <limit lower="-3.14159" upper="3.14159" effort="8.85" velocity="3.14" />
   </joint>
 
   <!-- fake joints for useful data -->
@@ -835,8 +808,8 @@
     <limit
       lower="-2.1"
       upper="2.1"
-      effort="0"
-      velocity="0" />
+      effort="8.85"
+      velocity="3.14" />
   </joint>
   <link name="Upper_Arm_2">
     <inertial>
@@ -905,8 +878,8 @@
     <limit
       lower="-0.1"
       upper="3.45"
-      effort="0"
-      velocity="0" />
+      effort="8.85"
+      velocity="3.14" />
   </joint>
   <link name="Lower_Arm_2">
     <inertial>
@@ -966,7 +939,7 @@
     <parent link="Upper_Arm_2" />
     <child link="Lower_Arm_2" />
     <axis xyz="1 0 0" />
-    <limit lower="-0.2" upper="3.14159" effort="0" velocity="0" />
+    <limit lower="-0.2" upper="3.14159" effort="8.85" velocity="3.14" />
   </joint>
   <link name="Wrist_Pitch_Roll_2">
     <inertial>
@@ -1026,8 +999,8 @@
     <limit 
       lower="-1.8"
       upper="1.8"
-      effort="0"
-      velocity="0" />
+      effort="8.85"
+      velocity="3.14" />
   </joint>
   <link name="Fixed_Jaw_2">
     <inertial>
@@ -1064,22 +1037,13 @@
       <material name="motor">
       </material>
     </visual>
+    <!-- Simplified collision keeps the gripper movable in Gazebo. -->
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0.008 -0.044 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Fixed_Jaw_part1.ply" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Fixed_Jaw_part2.ply" />
+        <box size="0.026 0.088 0.028" />
       </geometry>
     </collision>
   </link>
@@ -1088,7 +1052,7 @@
     <parent link="Wrist_Pitch_Roll_2" />
     <child link="Fixed_Jaw_2" />
     <axis xyz="0 -1 0" />
-    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <limit lower="-3.14159" upper="3.14159" effort="8.85" velocity="3.14" />
   </joint>
   <link name="Moving_Jaw_2">
     <inertial>
@@ -1115,29 +1079,10 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="-0.003 -0.048 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Moving_Jaw_part1.ply" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Moving_Jaw_part2.ply" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://xlerobot_gazebo/meshes/Moving_Jaw_part3.ply" />
+        <box size="0.018 0.072 0.02" />
       </geometry>
     </collision>
   </link>
@@ -1146,7 +1091,8 @@
     <parent link="Fixed_Jaw_2" />
     <child link="Moving_Jaw_2" />
     <axis xyz="0 0 1" />
-    <limit lower="0" upper="1.7" effort="0" velocity="0" />
+    <dynamics damping="0.2" friction="0.0" />
+    <limit lower="-3.14159" upper="3.14159" effort="8.85" velocity="3.14" />
   </joint>
 
   <!-- fake joints for useful data -->

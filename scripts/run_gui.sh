@@ -9,8 +9,7 @@ if [[ -z "${DISPLAY:-}" ]]; then
 fi
 
 if command -v xhost >/dev/null 2>&1; then
-  xhost +local:docker >/dev/null 2>&1 || true
+  xhost +SI:localuser:"$(id -un)" >/dev/null 2>&1 || true
 fi
 
 docker compose up --build gazebo
-

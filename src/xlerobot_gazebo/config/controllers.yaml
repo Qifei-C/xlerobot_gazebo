@@ -12,7 +12,13 @@ controller_manager:
     left_arm_position_controller:
       type: forward_command_controller/ForwardCommandController
 
+    left_gripper_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
     right_arm_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+    right_gripper_position_controller:
       type: forward_command_controller/ForwardCommandController
 
     head_position_controller:
@@ -46,6 +52,11 @@ left_arm_position_controller:
       - Elbow
       - Wrist_Pitch
       - Wrist_Roll
+
+left_gripper_position_controller:
+  ros__parameters:
+    interface_name: position
+    joints:
       - Jaw
 
 right_arm_position_controller:
@@ -57,6 +68,11 @@ right_arm_position_controller:
       - Elbow_2
       - Wrist_Pitch_2
       - Wrist_Roll_2
+
+right_gripper_position_controller:
+  ros__parameters:
+    interface_name: position
+    joints:
       - Jaw_2
 
 head_position_controller:

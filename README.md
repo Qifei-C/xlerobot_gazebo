@@ -74,8 +74,16 @@ cd /home/qifei/xlerobot_gazebo
 如果 Gazebo GUI 无法连接 X11，先执行一次：
 
 ```bash
-xhost +local:docker
+xhost +SI:localuser:$(id -un)
 ```
+
+这会把 X11 授权收窄到当前本地用户，而不是放开给所有本地 Docker 容器。
+
+## 本地运行说明
+
+`compose.yml` 里保留了 `network_mode: host` 和 `ipc: host`，这是为了本机 Gazebo / ROS 2 联调时减少网络和共享内存层面的额外配置。
+
+这套 compose 配置是面向本地开发机的便利配置，不适合作为多用户或强隔离环境的通用容器模板。
 
 ## 停止
 
@@ -209,6 +217,58 @@ geometry_msgs/msg/TwistStamped
 - `linear.x` 前进
 - `linear.y` 横移
 - `angular.z` 原地转动
+
+### 官方 controller 适配
+
+仓库现在额外提供一层“官方 XLeRobot action/observation dict -> ROS”薄适配：
+
+- 输入话题：`/xlerobot/action_dict`
+- 输出话题：`/xlerobot/observation_dict`
+- 消息类型：`std_msgs/msg/String`
+- 载荷格式：JSON object
+
+这个适配层保持官方 `XLeRobot` 的整机键名：
+
+- 左臂：`left_arm_*.pos`
+- 右臂：`right_arm_*.pos`
+- 头部：`head_motor_1.pos`、`head_motor_2.pos`
+- 底盘：`x.vel`、`y.vel`、`theta.vel`
+
+底盘单位保持官方 3 轮底盘约定：
+
+- `x.vel`: `m/s`
+- `y.vel`: `m/s`
+- `theta.vel`: `deg/s`
+
+位置量支持两种表示：
+
+- 默认 `official_use_degrees:=false`，对齐官方 `use_degrees=False` 配置，非夹爪关节按各自限位映射到 `[-100, 100]`
+- 启动时传 `official_use_degrees:=true`，则非夹爪关节按角度 `deg` 收发，更适合人工调试
+- 夹爪始终按官方 `0..100` 语义收发
+
+适配层会把输入 JSON 转成：
+
+- `/base/cmd_vel` 的 `geometry_msgs/msg/TwistStamped`
+- 左右臂和头部 position controller 的 `Float64MultiArray`
+
+同时把 `/joint_states` 和 `/odom` 反向聚合成官方 observation JSON。
+
+示例：
+
+```bash
+ros2 topic pub --once /xlerobot/action_dict std_msgs/msg/String \
+  '{"data":"{\"x.vel\": 0.15, \"y.vel\": 0.0, \"theta.vel\": 0.0}"}'
+```
+
+```bash
+ros2 topic echo /xlerobot/observation_dict --once
+```
+
+用角度模式启动：
+
+```bash
+ros2 launch xlerobot_gazebo sim.launch.py headless:=true backend:=omni official_use_degrees:=true
+```
 
 ### 底盘 envelope
 

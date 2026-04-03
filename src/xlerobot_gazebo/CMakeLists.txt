@@ -14,10 +14,12 @@ install(
 
 install(
   PROGRAMS
+    scripts/base_twist_utils.py
     scripts/odom_relay.py
     scripts/planar_joint_odometry.py
     scripts/twist_stamped_relay.py
     scripts/twist_to_planar_cmd.py
+    scripts/xlerobot_official_base_adapter.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

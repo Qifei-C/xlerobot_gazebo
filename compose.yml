@@ -9,6 +9,8 @@ services:
         USERNAME: ros
     image: demo-bot-gazebo:jazzy
     container_name: demo-bot-gazebo
+    # Host networking/IPCs are kept for local Gazebo and ROS discovery convenience.
+    # This is intentionally a local-dev setup, not an isolated multi-tenant container profile.
     network_mode: host
     ipc: host
     stdin_open: true
@@ -34,6 +36,8 @@ services:
         USERNAME: ros
     image: demo-bot-gazebo:jazzy
     container_name: demo-bot-gazebo-headless
+    # Host networking/IPCs are kept for local Gazebo and ROS discovery convenience.
+    # This is intentionally a local-dev setup, not an isolated multi-tenant container profile.
     network_mode: host
     ipc: host
     stdin_open: true
@@ -41,4 +45,3 @@ services:
     environment:
       ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
     command: ros2 launch demo_bot_gazebo sim.launch.py headless:=true
-

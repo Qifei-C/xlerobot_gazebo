@@ -23,6 +23,11 @@ def launch_setup(context, *args, **kwargs):
     world_path = LaunchConfiguration("world").perform(context)
     headless = LaunchConfiguration("headless").perform(context).lower() in ("1", "true", "yes")
     backend = LaunchConfiguration("backend").perform(context).lower()
+    official_use_degrees = LaunchConfiguration("official_use_degrees").perform(context).lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     use_sim_time = LaunchConfiguration("use_sim_time")
 
     if backend not in ("omni", "planar"):
@@ -95,6 +100,7 @@ def launch_setup(context, *args, **kwargs):
                 }
             ],
         )
+
         odom_bridge = Node(
             package="xlerobot_gazebo",
             executable="odom_relay.py",
@@ -134,6 +140,22 @@ def launch_setup(context, *args, **kwargs):
                 }
             ],
         )
+
+    official_base_adapter = Node(
+        package="xlerobot_gazebo",
+        executable="xlerobot_official_base_adapter.py",
+        output="screen",
+        parameters=[
+            {
+                "input_action_topic": "/xlerobot/action_dict",
+                "output_cmd_topic": "/base/cmd_vel",
+                "input_odom_topic": "/odom",
+                "output_observation_topic": "/xlerobot/observation_dict",
+                "command_frame_id": "base_link",
+                "use_degrees": official_use_degrees,
+            }
+        ],
+    )
 
     spawn_robot = Node(
         package="ros_gz_sim",
@@ -181,6 +203,19 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    left_gripper_position_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        output="screen",
+        arguments=[
+            "left_gripper_position_controller",
+            "--controller-manager",
+            "/controller_manager",
+            "--controller-manager-timeout",
+            "120",
+        ],
+    )
+
     omni_base_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -220,6 +255,19 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    right_gripper_position_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        output="screen",
+        arguments=[
+            "right_gripper_position_controller",
+            "--controller-manager",
+            "/controller_manager",
+            "--controller-manager-timeout",
+            "120",
+        ],
+    )
+
     return [
         SetEnvironmentVariable(
             name="GZ_SIM_RESOURCE_PATH",
@@ -230,6 +278,7 @@ def launch_setup(context, *args, **kwargs):
         clock_bridge,
         command_bridge,
         odom_bridge,
+        official_base_adapter,
         spawn_robot,
         RegisterEventHandler(
             OnProcessExit(
@@ -252,12 +301,24 @@ def launch_setup(context, *args, **kwargs):
         RegisterEventHandler(
             OnProcessExit(
                 target_action=left_arm_position_controller_spawner,
+                on_exit=[left_gripper_position_controller_spawner],
+            )
+        ),
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=left_gripper_position_controller_spawner,
                 on_exit=[right_arm_position_controller_spawner],
             )
         ),
         RegisterEventHandler(
             OnProcessExit(
                 target_action=right_arm_position_controller_spawner,
+                on_exit=[right_gripper_position_controller_spawner],
+            )
+        ),
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=right_gripper_position_controller_spawner,
                 on_exit=[head_position_controller_spawner],
             )
         ),
@@ -274,6 +335,7 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("world", default_value=default_world),
             DeclareLaunchArgument("backend", default_value="omni"),
+            DeclareLaunchArgument("official_use_degrees", default_value="false"),
             OpaqueFunction(function=launch_setup),
         ]
     )

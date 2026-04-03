@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-import math
+import threading
 
 import rclpy
 from geometry_msgs.msg import TwistStamped
 from rclpy.node import Node
+
+from base_twist_utils import LimitConfig
+from base_twist_utils import limit_body_twist
 
 
 class TwistStampedRelay(Node):
@@ -43,6 +46,17 @@ class TwistStampedRelay(Node):
         self.wheel_offset = float(self.get_parameter("wheel_offset").value)
         self.robot_radius = float(self.get_parameter("robot_radius").value)
         self.wheel_radius = float(self.get_parameter("wheel_radius").value)
+        self.limit_config = LimitConfig(
+            max_planar_speed=self.max_planar_speed,
+            max_angular_speed=self.max_angular_speed,
+            max_planar_acceleration=self.max_planar_acceleration,
+            max_angular_acceleration=self.max_angular_acceleration,
+            max_wheel_speed=self.max_wheel_speed,
+            wheel_count=self.wheel_count,
+            wheel_offset=self.wheel_offset,
+            robot_radius=self.robot_radius,
+            wheel_radius=self.wheel_radius,
+        )
 
         self.publisher = self.create_publisher(TwistStamped, output_topic, 10)
         self.debug_publisher = self.create_publisher(TwistStamped, limited_topic, 10)
@@ -57,94 +71,38 @@ class TwistStampedRelay(Node):
         now = self.get_clock().now()
         self.last_command_time = now
         self.last_update_time = now
+        self.state_lock = threading.Lock()
         self.timer = self.create_timer(1.0 / max(publish_rate_hz, 1.0), self.publish_twist)
 
     def handle_twist(self, msg: TwistStamped) -> None:
-        self.target_twist = self.clamp_body_twist(
-            msg.twist.linear.x,
-            msg.twist.linear.y,
-            msg.twist.angular.z,
-        )
-        self.last_command_time = self.get_clock().now()
-
-    def clamp_body_twist(self, vx: float, vy: float, wz: float) -> tuple[float, float, float]:
-        planar_speed = math.hypot(vx, vy)
-        if planar_speed > self.max_planar_speed > 0.0:
-            scale = self.max_planar_speed / planar_speed
-            vx *= scale
-            vy *= scale
-        if self.max_angular_speed > 0.0:
-            wz = max(-self.max_angular_speed, min(self.max_angular_speed, wz))
-        return vx, vy, wz
-
-    def apply_acceleration_limits(
-        self, target_vx: float, target_vy: float, target_wz: float, dt: float
-    ) -> tuple[float, float, float]:
-        current_vx, current_vy, current_wz = self.current_twist
-        delta_vx = target_vx - current_vx
-        delta_vy = target_vy - current_vy
-        planar_delta = math.hypot(delta_vx, delta_vy)
-        max_planar_delta = self.max_planar_acceleration * dt
-        if planar_delta > max_planar_delta > 0.0:
-            scale = max_planar_delta / planar_delta
-            delta_vx *= scale
-            delta_vy *= scale
-
-        delta_wz = target_wz - current_wz
-        max_wz_delta = self.max_angular_acceleration * dt
-        if abs(delta_wz) > max_wz_delta > 0.0:
-            delta_wz = math.copysign(max_wz_delta, delta_wz)
-
-        return current_vx + delta_vx, current_vy + delta_vy, current_wz + delta_wz
-
-    def apply_wheel_speed_limit(self, vx: float, vy: float, wz: float) -> tuple[float, float, float]:
-        if self.max_wheel_speed <= 0.0 or self.wheel_count < 1 or self.wheel_radius <= 0.0:
-            return vx, vy, wz
-
-        peak_speed = 0.0
-        for index in range(self.wheel_count):
-            alpha = self.wheel_offset + index * (2.0 * math.pi / self.wheel_count)
-            wheel_speed = (
-                -math.sin(alpha) * vx
-                + math.cos(alpha) * vy
-                - self.robot_radius * wz
-            ) / self.wheel_radius
-            peak_speed = max(peak_speed, abs(wheel_speed))
-
-        if peak_speed > self.max_wheel_speed:
-            scale = self.max_wheel_speed / peak_speed
-            return vx * scale, vy * scale, wz * scale
-        return vx, vy, wz
+        with self.state_lock:
+            self.target_twist = (
+                msg.twist.linear.x,
+                msg.twist.linear.y,
+                msg.twist.angular.z,
+            )
+            self.last_command_time = self.get_clock().now()
 
     def publish_twist(self) -> None:
         now = self.get_clock().now()
-        dt = (now - self.last_update_time).nanoseconds / 1e9
-        if dt <= 0.0:
-            return
-        self.last_update_time = now
+        with self.state_lock:
+            dt = (now - self.last_update_time).nanoseconds / 1e9
+            if dt <= 0.0:
+                return
+            self.last_update_time = now
 
-        target_vx, target_vy, target_wz = self.target_twist
-        stale = (now - self.last_command_time).nanoseconds / 1e9 > self.command_timeout
-        if stale:
-            target_vx, target_vy, target_wz = 0.0, 0.0, 0.0
+            target_twist = self.target_twist
+            stale = (now - self.last_command_time).nanoseconds / 1e9 > self.command_timeout
+            if stale:
+                target_twist = (0.0, 0.0, 0.0)
 
-        limited_vx, limited_vy, limited_wz = self.apply_acceleration_limits(
-            target_vx,
-            target_vy,
-            target_wz,
-            dt,
-        )
-        limited_vx, limited_vy, limited_wz = self.apply_wheel_speed_limit(
-            limited_vx,
-            limited_vy,
-            limited_wz,
-        )
-        limited_vx, limited_vy, limited_wz = self.clamp_body_twist(
-            limited_vx,
-            limited_vy,
-            limited_wz,
-        )
-        self.current_twist = (limited_vx, limited_vy, limited_wz)
+            limited_vx, limited_vy, limited_wz = limit_body_twist(
+                self.current_twist,
+                target_twist,
+                dt,
+                self.limit_config,
+            )
+            self.current_twist = (limited_vx, limited_vy, limited_wz)
 
         command = TwistStamped()
         command.header.stamp = now.to_msg()
