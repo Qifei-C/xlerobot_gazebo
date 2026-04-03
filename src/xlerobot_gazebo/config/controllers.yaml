@@ -27,10 +27,10 @@ controller_manager:
 omni_base_controller:
   ros__parameters:
     wheel_names:
+      - wheel_0_joint
       - wheel_1_joint
       - wheel_2_joint
-      - wheel_0_joint
-    wheel_offset: 0.5235987756
+    wheel_offset: 0.0
     robot_radius: 0.111
     wheel_radius: 0.0508
     odom_frame_id: odom

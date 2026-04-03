@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
     wheel_count: 3
-    wheel_offset: 0.5235987756
+    wheel_offset: 0.0
     robot_radius: 0.111
     wheel_radius: 0.0508

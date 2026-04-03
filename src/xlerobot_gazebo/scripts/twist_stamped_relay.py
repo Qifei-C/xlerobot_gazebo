@@ -24,7 +24,7 @@ class TwistStampedRelay(Node):
         self.declare_parameter("max_angular_acceleration", 3.14159265359)
         self.declare_parameter("max_wheel_speed", 10.0)
         self.declare_parameter("wheel_count", 3)
-        self.declare_parameter("wheel_offset", 0.5235987756)
+        self.declare_parameter("wheel_offset", 0.0)
         self.declare_parameter("robot_radius", 0.111)
         self.declare_parameter("wheel_radius", 0.0508)
 
