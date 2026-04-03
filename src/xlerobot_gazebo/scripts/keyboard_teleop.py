@@ -50,16 +50,7 @@ def read_key(timeout: float = 0.1) -> str | None:
 
 class KeyboardTeleop(Node):
     def __init__(self) -> None:
-        super().__init__(
-            "keyboard_teleop",
-            parameter_overrides=[
-                rclpy.parameter.Parameter(
-                    "use_sim_time",
-                    rclpy.parameter.Parameter.Type.BOOL,
-                    True,
-                ),
-            ],
-        )
+        super().__init__("keyboard_teleop")
         self.declare_parameter("cmd_topic", "/base/cmd_vel")
         self.declare_parameter("linear_speed", 0.2)
         self.declare_parameter("angular_speed", 1.0)
