@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import math
-
 import rclpy
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import TransformStamped
@@ -10,13 +8,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from tf2_ros import TransformBroadcaster
 
-
-def yaw_to_quaternion(yaw: float) -> Quaternion:
-    half_yaw = yaw * 0.5
-    msg = Quaternion()
-    msg.w = math.cos(half_yaw)
-    msg.z = math.sin(half_yaw)
-    return msg
+from base_twist_utils import extract_planar_joint_state
+from base_twist_utils import yaw_to_quaternion_components
 
 
 class PlanarJointOdometry(Node):
@@ -44,32 +37,24 @@ class PlanarJointOdometry(Node):
         self.tf_broadcaster = TransformBroadcaster(self) if self.publish_tf else None
 
     def handle_joint_states(self, msg: JointState) -> None:
-        try:
-            x_index = msg.name.index("root_x_axis_joint")
-            y_index = msg.name.index("root_y_axis_joint")
-            yaw_index = msg.name.index("root_z_rotation_joint")
-        except ValueError:
+        state = extract_planar_joint_state(msg.name, msg.position, msg.velocity)
+        if state is None:
             return
-
-        if len(msg.position) <= max(x_index, y_index, yaw_index):
-            return
+        x, y, yaw, vx, vy, wz = state
 
         odom = Odometry()
         odom.header.stamp = msg.header.stamp
         odom.header.frame_id = self.odom_frame_id
         odom.child_frame_id = self.base_frame_id
 
-        x = msg.position[x_index]
-        y = msg.position[y_index]
-        yaw = msg.position[yaw_index]
         odom.pose.pose.position.x = x
         odom.pose.pose.position.y = y
-        odom.pose.pose.orientation = yaw_to_quaternion(yaw)
+        qx, qy, qz, qw = yaw_to_quaternion_components(yaw)
+        odom.pose.pose.orientation = Quaternion(x=qx, y=qy, z=qz, w=qw)
 
-        if len(msg.velocity) > max(x_index, y_index, yaw_index):
-            odom.twist.twist.linear.x = msg.velocity[x_index]
-            odom.twist.twist.linear.y = msg.velocity[y_index]
-            odom.twist.twist.angular.z = msg.velocity[yaw_index]
+        odom.twist.twist.linear.x = vx
+        odom.twist.twist.linear.y = vy
+        odom.twist.twist.angular.z = wz
 
         self.publisher.publish(odom)
 
