@@ -1,5 +1,8 @@
 # XLeRobot Gazebo
 
+
+<img width="1147" height="883" alt="A XLeRobot with two SO101 arms in Gazebo" src="https://github.com/user-attachments/assets/fd967821-43ca-4c59-b812-e760f9f3cfa7" />
+
 This repository provides a self-contained, containerized Gazebo simulation environment including:
 
 - `Gazebo Harmonic` + `ROS 2 Jazzy`
