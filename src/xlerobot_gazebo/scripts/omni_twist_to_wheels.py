@@ -8,7 +8,6 @@ Inverse kinematics for a 3-wheel omni drive (wheels at 0°, 120°, 240°):
 where α_i = wheel_offset + i * 2π/n.
 """
 
-import math
 import threading
 
 import rclpy
@@ -16,6 +15,7 @@ from geometry_msgs.msg import TwistStamped
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 
+from base_twist_utils import body_twist_to_omni_wheel_speeds
 from base_twist_utils import LimitConfig
 from base_twist_utils import limit_body_twist
 
@@ -59,11 +59,6 @@ class OmniTwistToWheels(Node):
             wheel_radius=self.wheel_radius,
         )
 
-        self.wheel_angles = [
-            self.wheel_offset + i * 2.0 * math.pi / self.wheel_count
-            for i in range(self.wheel_count)
-        ]
-
         self.wheel_pub = self.create_publisher(Float64MultiArray, output_topic, 10)
         self.debug_pub = self.create_publisher(TwistStamped, limited_topic, 10)
         self.sub = self.create_subscription(TwistStamped, input_topic, self._on_twist, 10)
@@ -86,11 +81,15 @@ class OmniTwistToWheels(Node):
             self.last_command_time = self.get_clock().now()
 
     def _body_to_wheels(self, vx: float, vy: float, wz: float) -> list[float]:
-        return [
-            (-math.sin(a) * vx + math.cos(a) * vy + self.robot_radius * wz)
-            / self.wheel_radius
-            for a in self.wheel_angles
-        ]
+        return body_twist_to_omni_wheel_speeds(
+            vx,
+            vy,
+            wz,
+            self.wheel_count,
+            self.wheel_offset,
+            self.robot_radius,
+            self.wheel_radius,
+        )
 
     def _tick(self) -> None:
         now = self.get_clock().now()
@@ -126,9 +125,12 @@ def main() -> None:
     node = OmniTwistToWheels()
     try:
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

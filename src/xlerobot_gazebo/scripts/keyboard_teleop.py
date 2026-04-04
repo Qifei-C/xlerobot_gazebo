@@ -2,15 +2,19 @@
 """WASD keyboard teleop for XLeRobot base.
 
 Controls:
-    W / S  — forward / backward
-    A / D  — strafe left / right
-    Q / E  — rotate left / right
-    Space  — stop
+    W / S  — forward / backward  (vx)
+    A / D  — strafe left / right (vy)
+    Q / E  — rotate left / right (wz)
+    Space  — stop all axes
     Esc    — quit
+
+Keys modify only their own axis, so pressing W then A
+gives forward + strafe (diagonal motion).
 """
 
 import sys
 import termios
+import time
 import tty
 from select import select
 
@@ -18,15 +22,15 @@ import rclpy
 from geometry_msgs.msg import TwistStamped
 from rclpy.node import Node
 
-KEYMAP: dict[str, tuple[float, float, float]] = {
-    # key: (linear_x, linear_y, angular_z)
-    "w": (1.0, 0.0, 0.0),
-    "s": (-1.0, 0.0, 0.0),
-    "a": (0.0, 1.0, 0.0),
-    "d": (0.0, -1.0, 0.0),
-    "q": (0.0, 0.0, 1.0),
-    "e": (0.0, 0.0, -1.0),
-    " ": (0.0, 0.0, 0.0),
+# Each key maps to (axis, sign).  "stop" resets all axes.
+KEYMAP: dict[str, tuple[str, float]] = {
+    "w": ("vx", 1.0),
+    "s": ("vx", -1.0),
+    "a": ("vy", 1.0),
+    "d": ("vy", -1.0),
+    "q": ("wz", -1.0),
+    "e": ("wz", 1.0),
+    " ": ("stop", 0.0),
 }
 
 HELP = """\
@@ -35,8 +39,10 @@ WASD Keyboard Teleop
   W/S : forward / backward
   A/D : strafe left / right
   Q/E : rotate left / right
-Space : stop
+Space : stop all axes
   Esc : quit
+
+Keys are independent — press multiple for combined motion.
 """
 
 
@@ -52,14 +58,14 @@ class KeyboardTeleop(Node):
     def __init__(self) -> None:
         super().__init__("keyboard_teleop")
         self.declare_parameter("cmd_topic", "/base/cmd_vel")
-        self.declare_parameter("linear_speed", 0.2)
-        self.declare_parameter("angular_speed", 1.0)
+        self.declare_parameter("speed", 0.2)
         self.declare_parameter("publish_rate_hz", 20.0)
+        self.declare_parameter("command_timeout", 0.5)
 
         topic = self.get_parameter("cmd_topic").value
-        self.linear_speed: float = self.get_parameter("linear_speed").value
-        self.angular_speed: float = self.get_parameter("angular_speed").value
+        self.speed: float = self.get_parameter("speed").value
         rate_hz: float = self.get_parameter("publish_rate_hz").value
+        self.command_timeout: float = self.get_parameter("command_timeout").value
 
         self.pub = self.create_publisher(TwistStamped, topic, 10)
         self.timer = self.create_timer(1.0 / rate_hz, self._tick)
@@ -67,8 +73,25 @@ class KeyboardTeleop(Node):
         self.vx = 0.0
         self.vy = 0.0
         self.wz = 0.0
+        self.last_key_time = 0.0
+
+    def _print_status(self) -> None:
+        sys.stdout.write(
+            f"\rCommand: vx={self.vx:+.2f} vy={self.vy:+.2f} wz={self.wz:+.2f}      "
+        )
+        sys.stdout.flush()
 
     def _tick(self) -> None:
+        if (
+            self.command_timeout > 0.0
+            and (self.vx != 0.0 or self.vy != 0.0 or self.wz != 0.0)
+            and (time.monotonic() - self.last_key_time) > self.command_timeout
+        ):
+            self.vx = 0.0
+            self.vy = 0.0
+            self.wz = 0.0
+            self._print_status()
+
         msg = TwistStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "base_link"
@@ -82,11 +105,22 @@ class KeyboardTeleop(Node):
         if key == "\x1b":
             return False
         lower = key.lower()
-        if lower in KEYMAP:
-            lx, ly, az = KEYMAP[lower]
-            self.vx = lx * self.linear_speed
-            self.vy = ly * self.linear_speed
-            self.wz = az * self.angular_speed
+        if lower not in KEYMAP:
+            return True
+        axis, sign = KEYMAP[lower]
+        if axis == "stop":
+            self.vx = 0.0
+            self.vy = 0.0
+            self.wz = 0.0
+        elif axis == "vx":
+            self.vx = sign * self.speed
+        elif axis == "vy":
+            self.vy = sign * self.speed
+        elif axis == "wz":
+            self.wz = sign * self.speed
+        self.last_key_time = time.monotonic()
+        self._tick()
+        self._print_status()
         return True
 
 
@@ -98,17 +132,25 @@ def main() -> None:
     try:
         tty.setcbreak(sys.stdin.fileno())
         print(HELP)
+        node._print_status()
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0)
             key = read_key(timeout=0.05)
             if key is not None and not node.handle_key(key):
                 break
+    except KeyboardInterrupt:
+        pass
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        node.vx = node.vy = node.wz = 0.0
-        node._tick()  # publish one stop message
+        node.vx = 0.0
+        node.vy = 0.0
+        node.wz = 0.0
+        if rclpy.ok():
+            node._tick()
+        print()
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

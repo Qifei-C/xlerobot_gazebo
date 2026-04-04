@@ -169,7 +169,7 @@ def launch_setup(context, *args, **kwargs):
             "-name",
             "xlerobot",
             "-allow_renaming",
-            "true",
+            "false",
             "-topic",
             "robot_description",
             "-x",

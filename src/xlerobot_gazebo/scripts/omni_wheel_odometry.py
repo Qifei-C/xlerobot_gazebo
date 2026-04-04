@@ -21,6 +21,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from tf2_ros import TransformBroadcaster
 
+from base_twist_utils import omni_wheel_speeds_to_body_twist
 from base_twist_utils import yaw_to_quaternion_components
 
 
@@ -50,11 +51,6 @@ class OmniWheelOdometry(Node):
         self.wheel_radius = float(self.get_parameter("wheel_radius").value)
         self.wheel_names: list[str] = list(self.get_parameter("wheel_names").value)
 
-        self.wheel_angles = [
-            self.wheel_offset + i * 2.0 * math.pi / self.wheel_count
-            for i in range(self.wheel_count)
-        ]
-
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
@@ -72,24 +68,13 @@ class OmniWheelOdometry(Node):
     def _wheels_to_body(
         self, wheel_velocities: list[float],
     ) -> tuple[float, float, float]:
-        n = self.wheel_count
-        r = self.wheel_radius
-        big_r = self.robot_radius
-
-        vx = 0.0
-        vy = 0.0
-        wz = 0.0
-        for i, v_w in enumerate(wheel_velocities):
-            alpha = self.wheel_angles[i]
-            rim = v_w * r
-            vx += -math.sin(alpha) * rim
-            vy += math.cos(alpha) * rim
-            wz += rim
-
-        vx *= 2.0 / n
-        vy *= 2.0 / n
-        wz /= n * big_r
-        return vx, vy, wz
+        return omni_wheel_speeds_to_body_twist(
+            wheel_velocities,
+            self.wheel_count,
+            self.wheel_offset,
+            self.robot_radius,
+            self.wheel_radius,
+        )
 
     def _on_joint_state(self, msg: JointState) -> None:
         wheel_velocities: list[float] = []
@@ -155,9 +140,12 @@ def main() -> None:
     node = OmniWheelOdometry()
     try:
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

@@ -4,6 +4,11 @@
   <xacro:arg name="controllers_file" default=""/>
   <xacro:property name="omni_wheel_radius" value="0.0508"/>
   <xacro:property name="omni_wheel_width" value="0.028"/>
+  <xacro:property name="omni_mu_free" value="0.001"/>
+  <xacro:property name="omni_mu_drive" value="1.5"/>
+  <xacro:property name="omni_slip_free" value="1.0"/>
+  <xacro:property name="omni_slip_drive" value="0.005"/>
+  <xacro:property name="omni_wheel_normal_force" value="260.0"/>
 
   <material name="white">
     <color rgba="0.3 0.3 0.3 1" />
@@ -83,7 +88,7 @@
 
     <visual name="raskog">
       <origin
-        xyz="-0.01668 0.502 0.895"
+        xyz="-0.01498 0.50143 0.895"
         rpy="1.5708 0 0" />
       <geometry>
         <mesh filename="package://xlerobot_gazebo/meshes/raskogbody.stl" scale="0.0009 0.001 0.0009" />
@@ -94,7 +99,7 @@
 
     <visual name="raskogwheel1">
       <origin
-        xyz="-0.01668 0.502 0.895"
+        xyz="-0.01498 0.50143 0.895"
         rpy="1.5708 0 0" />
       <geometry>
         <mesh filename="package://xlerobot_gazebo/meshes/raskogwheel1.stl" scale="0.0009 0.001 0.0009" />
@@ -105,7 +110,7 @@
 
     <visual name="raskogwheel2">
       <origin
-        xyz="-0.01668 0.502 0.895"
+        xyz="-0.01498 0.50143 0.895"
         rpy="1.5708 0 0" />
       <geometry>
         <mesh filename="package://xlerobot_gazebo/meshes/raskogwheel2.stl" scale="0.0009 0.001 0.0009" />
@@ -158,8 +163,9 @@
         <material name="grey"/>
       </visual>
       <collision>
+        <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
         <geometry>
-          <sphere radius="${omni_wheel_radius}"/>
+          <cylinder radius="${omni_wheel_radius}" length="${omni_wheel_width}"/>
         </geometry>
       </collision>
     </link>
@@ -172,12 +178,15 @@
       <dynamics damping="0.05" friction="0.0"/>
     </joint>
 
-    <!-- Sphere collision with uniform friction simulates omni-wheel rollers:
-         the velocity controller drives the correct wheel speeds while the
-         isotropic contact allows the body to slide in any direction. -->
+    <!-- Omni-wheel friction: low along roller-slide direction, high in drive direction.
+         fdir1 is in the collision frame. The collision cylinder is rotated 90° around X
+         (rpy="π/2 0 0"), so collision Z = link Y (the axle / roller-slide direction).
+         mu1 (along fdir1) is near-zero for free roller sliding.
+         mu2 (perpendicular) is high for drive grip. -->
     <gazebo reference="wheel_${index}_link">
-      <mu1>1.0</mu1>
-      <mu2>1.0</mu2>
+      <mu1>${omni_mu_free}</mu1>
+      <mu2>${omni_mu_drive}</mu2>
+      <fdir1>0 0 1</fdir1>
     </gazebo>
   </xacro:macro>
 
@@ -1461,6 +1470,26 @@
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+    <plugin filename="gz-sim-wheel-slip-system" name="gz::sim::systems::WheelSlip">
+      <wheel link_name="wheel_0_link">
+        <slip_compliance_lateral>${omni_slip_free}</slip_compliance_lateral>
+        <slip_compliance_longitudinal>${omni_slip_drive}</slip_compliance_longitudinal>
+        <wheel_normal_force>${omni_wheel_normal_force}</wheel_normal_force>
+        <wheel_radius>${omni_wheel_radius}</wheel_radius>
+      </wheel>
+      <wheel link_name="wheel_1_link">
+        <slip_compliance_lateral>${omni_slip_free}</slip_compliance_lateral>
+        <slip_compliance_longitudinal>${omni_slip_drive}</slip_compliance_longitudinal>
+        <wheel_normal_force>${omni_wheel_normal_force}</wheel_normal_force>
+        <wheel_radius>${omni_wheel_radius}</wheel_radius>
+      </wheel>
+      <wheel link_name="wheel_2_link">
+        <slip_compliance_lateral>${omni_slip_free}</slip_compliance_lateral>
+        <slip_compliance_longitudinal>${omni_slip_drive}</slip_compliance_longitudinal>
+        <wheel_normal_force>${omni_wheel_normal_force}</wheel_normal_force>
+        <wheel_radius>${omni_wheel_radius}</wheel_radius>
+      </wheel>
     </plugin>
   </gazebo>
 </robot>
