@@ -46,5 +46,8 @@ USER ${USER_UID}:${USER_GID}
 RUN source /opt/ros/jazzy/setup.bash \
     && colcon build
 
+RUN echo 'source /opt/ros/jazzy/setup.bash' >> "${HOME}/.bashrc" \
+    && echo '[ -f /workspaces/ws/install/setup.bash ] && source /workspaces/ws/install/setup.bash' >> "${HOME}/.bashrc"
+
 ENTRYPOINT ["/ros_entrypoint_overlay.sh"]
 CMD ["bash"]

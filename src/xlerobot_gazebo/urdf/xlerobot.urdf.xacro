@@ -4,6 +4,11 @@
   <xacro:arg name="controllers_file" default=""/>
   <xacro:property name="omni_wheel_radius" value="0.0508"/>
   <xacro:property name="omni_wheel_width" value="0.028"/>
+  <xacro:property name="omni_mu_free" value="0.001"/>
+  <xacro:property name="omni_mu_drive" value="1.5"/>
+  <xacro:property name="omni_slip_free" value="1.0"/>
+  <xacro:property name="omni_slip_drive" value="0.005"/>
+  <xacro:property name="omni_wheel_normal_force" value="260.0"/>
 
   <material name="white">
     <color rgba="0.3 0.3 0.3 1" />
@@ -83,7 +88,7 @@
 
     <visual name="raskog">
       <origin
-        xyz="-0.01668 0.502 0.895"
+        xyz="-0.01498 0.50143 0.895"
         rpy="1.5708 0 0" />
       <geometry>
         <mesh filename="package://xlerobot_gazebo/meshes/raskogbody.stl" scale="0.0009 0.001 0.0009" />
@@ -94,7 +99,7 @@
 
     <visual name="raskogwheel1">
       <origin
-        xyz="-0.01668 0.502 0.895"
+        xyz="-0.01498 0.50143 0.895"
         rpy="1.5708 0 0" />
       <geometry>
         <mesh filename="package://xlerobot_gazebo/meshes/raskogwheel1.stl" scale="0.0009 0.001 0.0009" />
@@ -105,7 +110,7 @@
 
     <visual name="raskogwheel2">
       <origin
-        xyz="-0.01668 0.502 0.895"
+        xyz="-0.01498 0.50143 0.895"
         rpy="1.5708 0 0" />
       <geometry>
         <mesh filename="package://xlerobot_gazebo/meshes/raskogwheel2.stl" scale="0.0009 0.001 0.0009" />
@@ -172,25 +177,37 @@
       <axis xyz="0 1 0"/>
       <dynamics damping="0.05" friction="0.0"/>
     </joint>
+
+    <!-- Omni-wheel friction: low along roller-slide direction, high in drive direction.
+         fdir1 is in the collision frame. The collision cylinder is rotated 90° around X
+         (rpy="π/2 0 0"), so collision Z = link Y (the axle / roller-slide direction).
+         mu1 (along fdir1) is near-zero for free roller sliding.
+         mu2 (perpendicular) is high for drive grip. -->
+    <gazebo reference="wheel_${index}_link">
+      <mu1>${omni_mu_free}</mu1>
+      <mu2>${omni_mu_drive}</mu2>
+      <fdir1>0 0 1</fdir1>
+    </gazebo>
   </xacro:macro>
 
+  <!-- Wheels at 0°, 120°, 240° with R=0.111. Wheel 0 faces front (+X). -->
   <xacro:omni_wheel_assembly
     index="0"
-    wheel_x="0.0"
-    wheel_y="-0.110787"
-    joint_yaw="-1.57079632679"/>
+    wheel_x="0.111"
+    wheel_y="0.0"
+    joint_yaw="-1.5707963268"/>
 
   <xacro:omni_wheel_assembly
     index="1"
-    wheel_x="0.096638"
-    wheel_y="0.055794"
+    wheel_x="-0.0555"
+    wheel_y="0.096129"
     joint_yaw="0.5235987756"/>
 
   <xacro:omni_wheel_assembly
     index="2"
-    wheel_x="-0.095945"
-    wheel_y="0.055394"
-    joint_yaw="2.617993878"/>
+    wheel_x="-0.0555"
+    wheel_y="-0.096129"
+    joint_yaw="2.6179938780"/>
 
 
 
@@ -1342,6 +1359,34 @@
     <child link="head_camera_depth_optical_frame"/>
   </joint>
 
+  <!-- Intel RealSense D455 RGBD camera on the head -->
+  <gazebo reference="head_camera_link">
+    <sensor name="head_rgbd" type="rgbd_camera">
+      <camera>
+        <horizontal_fov>1.51844</horizontal_fov>
+        <image>
+          <width>1280</width>
+          <height>720</height>
+          <format>R8G8B8</format>
+        </image>
+        <depth_camera>
+          <clip>
+            <near>0.4</near>
+            <far>6.0</far>
+          </clip>
+        </depth_camera>
+        <clip>
+          <near>0.1</near>
+          <far>100.0</far>
+        </clip>
+      </camera>
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <visualize>true</visualize>
+      <topic>head_camera</topic>
+    </sensor>
+  </gazebo>
+
   <ros2_control name="XLeRobotSystem" type="system">
     <hardware>
       <plugin>gz_ros2_control/GazeboSimSystem</plugin>
@@ -1453,6 +1498,26 @@
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+    <plugin filename="gz-sim-wheel-slip-system" name="gz::sim::systems::WheelSlip">
+      <wheel link_name="wheel_0_link">
+        <slip_compliance_lateral>${omni_slip_free}</slip_compliance_lateral>
+        <slip_compliance_longitudinal>${omni_slip_drive}</slip_compliance_longitudinal>
+        <wheel_normal_force>${omni_wheel_normal_force}</wheel_normal_force>
+        <wheel_radius>${omni_wheel_radius}</wheel_radius>
+      </wheel>
+      <wheel link_name="wheel_1_link">
+        <slip_compliance_lateral>${omni_slip_free}</slip_compliance_lateral>
+        <slip_compliance_longitudinal>${omni_slip_drive}</slip_compliance_longitudinal>
+        <wheel_normal_force>${omni_wheel_normal_force}</wheel_normal_force>
+        <wheel_radius>${omni_wheel_radius}</wheel_radius>
+      </wheel>
+      <wheel link_name="wheel_2_link">
+        <slip_compliance_lateral>${omni_slip_free}</slip_compliance_lateral>
+        <slip_compliance_longitudinal>${omni_slip_drive}</slip_compliance_longitudinal>
+        <wheel_normal_force>${omni_wheel_normal_force}</wheel_normal_force>
+        <wheel_radius>${omni_wheel_radius}</wheel_radius>
+      </wheel>
     </plugin>
   </gazebo>
 </robot>

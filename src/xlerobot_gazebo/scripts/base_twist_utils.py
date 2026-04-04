@@ -17,6 +17,58 @@ class LimitConfig:
     wheel_radius: float = 0.0
 
 
+def omni_wheel_angles(wheel_count: int, wheel_offset: float) -> list[float]:
+    return [
+        wheel_offset + index * (2.0 * math.pi / wheel_count)
+        for index in range(wheel_count)
+    ]
+
+
+def body_twist_to_omni_wheel_speeds(
+    vx: float,
+    vy: float,
+    wz: float,
+    wheel_count: int,
+    wheel_offset: float,
+    robot_radius: float,
+    wheel_radius: float,
+) -> list[float]:
+    if wheel_count < 1 or wheel_radius <= 0.0:
+        return []
+    return [
+        (-math.sin(alpha) * vx + math.cos(alpha) * vy + robot_radius * wz)
+        / wheel_radius
+        for alpha in omni_wheel_angles(wheel_count, wheel_offset)
+    ]
+
+
+def omni_wheel_speeds_to_body_twist(
+    wheel_speeds: list[float],
+    wheel_count: int,
+    wheel_offset: float,
+    robot_radius: float,
+    wheel_radius: float,
+) -> tuple[float, float, float]:
+    if wheel_count < 1 or wheel_radius <= 0.0 or robot_radius <= 0.0:
+        return 0.0, 0.0, 0.0
+
+    vx = 0.0
+    vy = 0.0
+    wz = 0.0
+    for alpha, wheel_speed in zip(
+        omni_wheel_angles(wheel_count, wheel_offset), wheel_speeds,
+    ):
+        rim_speed = wheel_speed * wheel_radius
+        vx += -math.sin(alpha) * rim_speed
+        vy += math.cos(alpha) * rim_speed
+        wz += rim_speed
+
+    vx *= 2.0 / wheel_count
+    vy *= 2.0 / wheel_count
+    wz /= wheel_count * robot_radius
+    return vx, vy, wz
+
+
 def clamp_body_twist(
     vx: float,
     vy: float,
@@ -74,15 +126,16 @@ def apply_omni_wheel_speed_limit(
     if max_wheel_speed <= 0.0 or wheel_count < 1 or wheel_radius <= 0.0:
         return vx, vy, wz
 
-    peak_speed = 0.0
-    for index in range(wheel_count):
-        alpha = wheel_offset + index * (2.0 * math.pi / wheel_count)
-        wheel_speed = (
-            -math.sin(alpha) * vx
-            + math.cos(alpha) * vy
-            - robot_radius * wz
-        ) / wheel_radius
-        peak_speed = max(peak_speed, abs(wheel_speed))
+    wheel_speeds = body_twist_to_omni_wheel_speeds(
+        vx,
+        vy,
+        wz,
+        wheel_count,
+        wheel_offset,
+        robot_radius,
+        wheel_radius,
+    )
+    peak_speed = max(abs(wheel_speed) for wheel_speed in wheel_speeds)
 
     if peak_speed > max_wheel_speed:
         scale = max_wheel_speed / peak_speed

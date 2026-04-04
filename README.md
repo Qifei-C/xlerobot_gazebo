@@ -1,24 +1,24 @@
 # XLeRobot Gazebo
 
-这个仓库提供一套独立的容器化 Gazebo 环境，内容包括：
+This repository provides a self-contained, containerized Gazebo simulation environment including:
 
 - `Gazebo Harmonic` + `ROS 2 Jazzy`
-- 一个最小差速机器人 `demo_bot_gazebo`
-- `SO101` 单臂机械臂仿真包 `so101_gazebo`
-- `XLeRobot` 双臂机器人仿真包 `xlerobot_gazebo`
+- A minimal differential-drive robot `demo_bot_gazebo`
+- `SO101` single-arm manipulator simulation package `so101_gazebo`
+- `XLeRobot` dual-arm mobile robot simulation package `xlerobot_gazebo`
 - `ros2_control` + `gz_ros2_control`
 
-## Repo 结构
+## Repository Structure
 
-- `Dockerfile` / `compose.yml`: 容器镜像与运行入口
-- `ros_entrypoint_overlay.sh`: 容器内 ROS 2 工作空间入口
-- `scripts/`: 常用启动脚本
-- `src/demo_bot_gazebo`: 最小示例机器人
-- `src/so101_gazebo`: `SO101` Gazebo 集成包
-- `src/xlerobot_gazebo`: `XLeRobot` Gazebo 主包
-- `THIRD_PARTY.md`: 第三方资产来源说明
+- `Dockerfile` / `compose.yml`: Container image and runtime entry points
+- `ros_entrypoint_overlay.sh`: ROS 2 workspace entry point inside the container
+- `scripts/`: Common launch scripts
+- `src/demo_bot_gazebo`: Minimal example robot
+- `src/so101_gazebo`: `SO101` Gazebo integration package
+- `src/xlerobot_gazebo`: `XLeRobot` Gazebo main package
+- `THIRD_PARTY.md`: Third-party asset attribution
 
-精简视图：
+Overview:
 
 ```text
 xlerobot_gazebo/
@@ -32,228 +32,273 @@ xlerobot_gazebo/
 └── THIRD_PARTY.md
 ```
 
-## 构建
+## Prerequisites
+
+- Docker (with Docker Compose)
+- GUI mode requires an X11 desktop environment and GPU (`/dev/dri`)
+
+## Build
 
 ```bash
-cd /home/qifei/xlerobot_gazebo
+git clone <repo-url> && cd xlerobot_gazebo
 docker compose build
 ```
 
-## 无头模式
+## Headless Mode
 
-适合 SSH、终端验证和 CI 场景：
+Suitable for SSH, terminal verification, and CI scenarios:
 
 ```bash
-cd /home/qifei/xlerobot_gazebo
+# demo_bot
 ./scripts/run_headless.sh
+
+# SO101
+./scripts/run_so101_headless.sh
+
+# XLeRobot (omni backend, default)
+./scripts/run_xlerobot_headless.sh
+
+# XLeRobot (planar backend)
+./scripts/run_xlerobot_headless.sh planar
 ```
 
-另开一个终端检查 `demo_bot` 控制器：
+## GUI Mode
+
+Run on a local desktop environment (requires `$DISPLAY` to be set):
 
 ```bash
-docker exec -it demo-bot-gazebo-headless bash
-ros2 control list_controllers
-```
-
-给 `demo_bot` 发一个前进速度：
-
-```bash
-docker exec -it demo-bot-gazebo-headless bash
-ros2 topic pub --once /diff_drive_base_controller/cmd_vel_unstamped geometry_msgs/msg/Twist "{linear: {x: 0.4}, angular: {z: 0.0}}"
-```
-
-## GUI 模式
-
-本机桌面环境下执行：
-
-```bash
-cd /home/qifei/xlerobot_gazebo
+# demo_bot
 ./scripts/run_gui.sh
+
+# SO101
+./scripts/run_so101_gui.sh
+
+# XLeRobot (omni backend, default)
+./scripts/run_xlerobot_gui.sh
+
+# XLeRobot (planar backend)
+./scripts/run_xlerobot_gui.sh planar
 ```
 
-如果 Gazebo GUI 无法连接 X11，先执行一次：
+If Gazebo GUI cannot connect to X11, run this once:
 
 ```bash
 xhost +SI:localuser:$(id -un)
 ```
 
-这会把 X11 授权收窄到当前本地用户，而不是放开给所有本地 Docker 容器。
+## Entering the Container
 
-## 本地运行说明
-
-`compose.yml` 里保留了 `network_mode: host` 和 `ipc: host`，这是为了本机 Gazebo / ROS 2 联调时减少网络和共享内存层面的额外配置。
-
-这套 compose 配置是面向本地开发机的便利配置，不适合作为多用户或强隔离环境的通用容器模板。
-
-## 停止
+The ROS environment is automatically loaded on `docker exec` — no manual `source` needed:
 
 ```bash
-cd /home/qifei/xlerobot_gazebo
-docker compose down
+# GUI container
+docker exec -it xlerobot-gazebo-gui bash
+
+# Headless container
+docker exec -it xlerobot-gazebo-headless bash
 ```
 
-如果是通过单独脚本启动的 `SO101` 或 `XLeRobot`，直接停止对应容器：
+## Keyboard Teleop (WASD)
+
+Run inside the container:
 
 ```bash
-docker rm -f so101-gazebo-headless
-docker rm -f xlerobot-gazebo-headless
+ros2 run xlerobot_gazebo keyboard_teleop.py
+```
+
+| Key | Action |
+|-----|--------|
+| W / S | Forward / Backward |
+| A / D | Strafe left / right |
+| Q / E | Rotate left / right |
+| Space | Stop all axes |
+| Esc | Quit |
+
+Keys are independent — press multiple for combined motion (e.g. W + A = forward-left diagonal).
+
+Adjustable parameter:
+
+```bash
+ros2 run xlerobot_gazebo keyboard_teleop.py --ros-args \
+  -p speed:=0.3
+```
+
+## Demo Bot
+
+Check controllers:
+
+```bash
+docker exec -it demo-bot-gazebo-headless bash
+ros2 control list_controllers
+```
+
+Send a forward velocity to `demo_bot`:
+
+```bash
+ros2 topic pub --once /diff_drive_base_controller/cmd_vel_unstamped \
+  geometry_msgs/msg/Twist "{linear: {x: 0.4}, angular: {z: 0.0}}"
 ```
 
 ## SO101
 
-无头启动：
-
-```bash
-cd /home/qifei/xlerobot_gazebo
-./scripts/run_so101_headless.sh
-```
-
-检查控制器：
+Check controllers:
 
 ```bash
 docker exec -it so101-gazebo-headless bash
-source /opt/ros/jazzy/setup.bash
-source /workspaces/ws/install/setup.bash
 ros2 control list_controllers
 ```
 
-当前已验证控制器：
+Verified controllers:
 
 - `joint_state_broadcaster`
 - `arm_position_controller`
 
 ## XLeRobot
 
-无头启动：
-
-```bash
-cd /home/qifei/xlerobot_gazebo
-./scripts/run_xlerobot_headless.sh
-```
-
-切到理想平面后端：
-
-```bash
-cd /home/qifei/xlerobot_gazebo
-./scripts/run_xlerobot_headless.sh planar
-```
-
-检查控制器：
+Check controllers:
 
 ```bash
 docker exec -it xlerobot-gazebo-headless bash
-source /opt/ros/jazzy/setup.bash
-source /workspaces/ws/install/setup.bash
 ros2 control list_controllers
 ```
 
-当前已验证控制器：
+Verified controllers:
 
 - `joint_state_broadcaster`
 - `omni_base_controller`
 - `left_arm_position_controller`
+- `left_gripper_position_controller`
 - `right_arm_position_controller`
+- `right_gripper_position_controller`
 - `head_position_controller`
 
-统一的上层底盘命令接口：
+### Topic Interface
 
-```bash
-/base/cmd_vel
+Unified high-level base command interface:
+
+```
+/base/cmd_vel    (geometry_msgs/msg/TwistStamped)
 ```
 
-消息类型为：
+Rate-limited debug topic:
 
-```bash
-geometry_msgs/msg/TwistStamped
 ```
-
-统一的限幅后调试话题：
-
-```bash
 /base/cmd_vel_limited
 ```
 
-其中：
+Odometry output:
 
-- `backend:=omni` 时，`/base/cmd_vel -> /omni_base_controller/cmd_vel -> wheel joints`
-- `backend:=planar` 时，`/base/cmd_vel -> /ideal_base_velocity_controller/commands -> root_x/root_y/yaw`
-
-统一的里程计出口：
-
-```bash
+```
 /odom
 ```
 
-其中：
+Details:
 
-- `backend:=omni` 时由 `omni_base_controller` 的里程计转发到 `/odom`
-- `backend:=planar` 时由根关节状态生成 `/odom`
+- With `backend:=omni`: `/base/cmd_vel -> /omni_base_controller/cmd_vel -> wheel joints`
+- With `backend:=planar`: `/base/cmd_vel -> /ideal_base_velocity_controller/commands -> root_x/root_y/yaw`
+- With `backend:=omni`: odometry is forwarded from `omni_base_controller` to `/odom`
+- With `backend:=planar`: odometry is generated from root joint states to `/odom`
 
-当前底盘结构：
+### Manual Control Examples
+
+Base:
+
+```bash
+# Forward
+ros2 topic pub --once /base/cmd_vel geometry_msgs/msg/TwistStamped \
+  "{twist: {linear: {x: 0.1}}}"
+
+# Strafe
+ros2 topic pub --once /base/cmd_vel geometry_msgs/msg/TwistStamped \
+  "{twist: {linear: {y: 0.1}}}"
+
+# Rotate
+ros2 topic pub --once /base/cmd_vel geometry_msgs/msg/TwistStamped \
+  "{twist: {angular: {z: 0.5}}}"
+```
+
+Arms (5 joints: Rotation, Pitch, Elbow, Wrist_Pitch, Wrist_Roll):
+
+```bash
+# Left arm
+ros2 topic pub --once /left_arm_position_controller/commands \
+  std_msgs/msg/Float64MultiArray "{data: [0.5, -0.3, 0.8, 0.0, 0.0]}"
+
+# Right arm
+ros2 topic pub --once /right_arm_position_controller/commands \
+  std_msgs/msg/Float64MultiArray "{data: [0.5, -0.3, 0.8, 0.0, 0.0]}"
+```
+
+Gripper (1 joint):
+
+```bash
+# Open
+ros2 topic pub --once /left_gripper_position_controller/commands \
+  std_msgs/msg/Float64MultiArray "{data: [0.5]}"
+
+# Close
+ros2 topic pub --once /left_gripper_position_controller/commands \
+  std_msgs/msg/Float64MultiArray "{data: [0.0]}"
+```
+
+Head (pan + tilt):
+
+```bash
+ros2 topic pub --once /head_position_controller/commands \
+  std_msgs/msg/Float64MultiArray "{data: [0.3, -0.2]}"
+```
+
+### Base Structure
 
 - `base_link`
-- `wheel_0_joint`
-- `wheel_1_joint`
-- `wheel_2_joint`
-- 控制器为官方 `omni_wheel_drive_controller`
-- 三轮几何中心对齐官方 `MuJoCo` 资产
+- `wheel_0_joint` / `wheel_1_joint` / `wheel_2_joint`
+- Three wheels equally spaced at 120° intervals; wheel axles point radially toward the base center, wheels drive tangentially
+- Custom omni-wheel inverse kinematics with directional friction and WheelSlip plugin
+- Three-wheel geometry center aligned with the official `MuJoCo` asset
 
-`omni` 主线的上层接口与下层 plant 分层：
+The `omni` pipeline separates the high-level interface from the low-level plant:
 
-- 上层始终只输出 body twist `u = [vx, vy, wz]`
-- Gazebo 下层把 body twist 落到 3 个轮关节
-- 轮半径、底盘半径、轮安装角在控制器和 plant 中共用一套参数
-- body-level limiter 负责速度、加速度和轮速上限，再送给 `omni_wheel_drive_controller`
+- The high-level always outputs a body twist `u = [vx, vy, wz]`
+- The Gazebo low-level maps the body twist to 3 wheel joints
+- Wheel radius, base radius, and wheel mounting angles share a single parameter set between the controller and plant
+- A body-level limiter enforces speed, acceleration, and wheel speed limits before sending to the wheel velocity controller
 
-`planar` 后端保留为调试后门：
+The `planar` backend is retained as a debugging fallback:
 
-- 仍然吃同一个 `/base/cmd_vel`
-- 不走轮式动力学，直接驱动 `root_x/root_y/yaw`
-- 适合 planner 回归、SLAM / perception / pipeline 联调
-- 使用简化版 envelope，不做轮速约束
+- Still consumes the same `/base/cmd_vel`
+- Bypasses wheel dynamics, directly driving `root_x/root_y/yaw`
+- Useful for planner regression, SLAM / perception / pipeline integration testing
+- Uses a simplified envelope without wheel speed constraints
 
-当前已验证行为：
+### Official Controller Adapter
 
-- `linear.x` 前进
-- `linear.y` 横移
-- `angular.z` 原地转动
+The repository provides a thin adapter layer from the official XLeRobot action/observation dict to ROS:
 
-### 官方 controller 适配
+- Input topic: `/xlerobot/action_dict`
+- Output topic: `/xlerobot/observation_dict`
+- Message type: `std_msgs/msg/String`
+- Payload format: JSON object
 
-仓库现在额外提供一层“官方 XLeRobot action/observation dict -> ROS”薄适配：
+This adapter preserves the official `XLeRobot` whole-body key names:
 
-- 输入话题：`/xlerobot/action_dict`
-- 输出话题：`/xlerobot/observation_dict`
-- 消息类型：`std_msgs/msg/String`
-- 载荷格式：JSON object
+- Left arm: `left_arm_*.pos`
+- Right arm: `right_arm_*.pos`
+- Head: `head_motor_1.pos`, `head_motor_2.pos`
+- Base: `x.vel`, `y.vel`, `theta.vel`
 
-这个适配层保持官方 `XLeRobot` 的整机键名：
-
-- 左臂：`left_arm_*.pos`
-- 右臂：`right_arm_*.pos`
-- 头部：`head_motor_1.pos`、`head_motor_2.pos`
-- 底盘：`x.vel`、`y.vel`、`theta.vel`
-
-底盘单位保持官方 3 轮底盘约定：
+Base units follow the official 3-wheel base convention:
 
 - `x.vel`: `m/s`
 - `y.vel`: `m/s`
 - `theta.vel`: `deg/s`
 
-位置量支持两种表示：
+Position values support two representations:
 
-- 默认 `official_use_degrees:=false`，对齐官方 `use_degrees=False` 配置，非夹爪关节按各自限位映射到 `[-100, 100]`
-- 启动时传 `official_use_degrees:=true`，则非夹爪关节按角度 `deg` 收发，更适合人工调试
-- 夹爪始终按官方 `0..100` 语义收发
+- Default `official_use_degrees:=false`: aligns with the official `use_degrees=False` configuration; non-gripper joints are mapped to `[-100, 100]` based on their respective limits
+- Launch with `official_use_degrees:=true`: non-gripper joints use degrees (`deg`), more suitable for manual debugging
+- Gripper always uses the official `0..100` semantic
 
-适配层会把输入 JSON 转成：
-
-- `/base/cmd_vel` 的 `geometry_msgs/msg/TwistStamped`
-- 左右臂和头部 position controller 的 `Float64MultiArray`
-
-同时把 `/joint_states` 和 `/odom` 反向聚合成官方 observation JSON。
-
-示例：
+Examples:
 
 ```bash
 ros2 topic pub --once /xlerobot/action_dict std_msgs/msg/String \
@@ -264,29 +309,45 @@ ros2 topic pub --once /xlerobot/action_dict std_msgs/msg/String \
 ros2 topic echo /xlerobot/observation_dict --once
 ```
 
-用角度模式启动：
+Launch with degree mode:
 
 ```bash
 ros2 launch xlerobot_gazebo sim.launch.py headless:=true backend:=omni official_use_degrees:=true
 ```
 
-### 底盘 envelope
+### Base Envelope
 
-`omni` 主线当前按保守实机 envelope 约束：
+The `omni` pipeline currently uses a conservative real-hardware envelope:
 
-- 最大平面速度 `0.3 m/s`
-- 最大角速度 `1.57 rad/s`
-- 最大平面加速度 `0.6 m/s^2`
-- 最大角加速度 `3.14 rad/s^2`
-- 最大轮速 `9.0 rad/s`
+- Max planar speed: `0.3 m/s`
+- Max angular speed: `1.57 rad/s`
+- Max planar acceleration: `0.6 m/s^2`
+- Max angular acceleration: `3.14 rad/s^2`
+- Max wheel speed: `9.0 rad/s`
 
-这组值参考了官方 `xlerobot_2wheels` 软件里的快档速度与轮半径配置，并把三轮 omni 底盘做了保守收敛：
+Local parameter files:
 
-- [config_xlerobot_2wheels.py](/home/qifei/vendor/XLeRobot/software/src/robots/xlerobot_2wheels/config_xlerobot_2wheels.py)
-- [xlerobot_2wheels.py](/home/qifei/vendor/XLeRobot/software/src/robots/xlerobot_2wheels/xlerobot_2wheels.py)
+- `src/xlerobot_gazebo/config/base_geometry.yaml`
+- `src/xlerobot_gazebo/config/base_envelope_real.yaml`
+- `src/xlerobot_gazebo/config/planner_test_envelope.yaml`
 
-本地参数文件：
+## Stopping
 
-- [base_geometry.yaml](/home/qifei/xlerobot_gazebo/src/xlerobot_gazebo/config/base_geometry.yaml)
-- [base_envelope_real.yaml](/home/qifei/xlerobot_gazebo/src/xlerobot_gazebo/config/base_envelope_real.yaml)
-- [planner_test_envelope.yaml](/home/qifei/xlerobot_gazebo/src/xlerobot_gazebo/config/planner_test_envelope.yaml)
+```bash
+docker compose down
+```
+
+If containers were launched via standalone scripts, stop them directly:
+
+```bash
+docker rm -f so101-gazebo-headless
+docker rm -f so101-gazebo-gui
+docker rm -f xlerobot-gazebo-headless
+docker rm -f xlerobot-gazebo-gui
+```
+
+## Local Development Notes
+
+`compose.yml` uses `network_mode: host` and `ipc: host` to simplify Gazebo / ROS 2 networking and shared memory configuration for local development.
+
+This compose configuration is designed for local development machines and is not intended as a general-purpose container template for multi-user or strong-isolation environments.
