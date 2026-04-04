@@ -1,7 +1,7 @@
 # XLeRobot Gazebo
 
+<img width="1002" height="884" alt="nazebo_xlerobot" src="https://github.com/user-attachments/assets/7a75a148-d21e-43ea-9869-cfbd9b446b19" />
 
-<img width="1147" height="883" alt="A XLeRobot with two SO101 arms in Gazebo" src="https://github.com/user-attachments/assets/fd967821-43ca-4c59-b812-e760f9f3cfa7" />
 
 This repository provides a self-contained, containerized Gazebo simulation environment including:
 
