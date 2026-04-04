@@ -43,7 +43,7 @@ xlerobot_gazebo/
 ## Build
 
 ```bash
-git clone <repo-url> && cd xlerobot_gazebo
+git clone git@github.com:Qifei-C/xlerobot_gazebo.git && cd xlerobot_gazebo
 docker compose build
 ```
 
