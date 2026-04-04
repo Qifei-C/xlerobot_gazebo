@@ -14,7 +14,7 @@ if pgrep -af "ros2 launch xlerobot_gazebo sim.launch.py" >/dev/null \
 fi
 
 if [[ -z "${DISPLAY:-}" ]]; then
-  echo "DISPLAY 未设置，无法启动 Gazebo GUI。"
+  echo "DISPLAY is not set — cannot start Gazebo GUI."
   exit 1
 fi
 
