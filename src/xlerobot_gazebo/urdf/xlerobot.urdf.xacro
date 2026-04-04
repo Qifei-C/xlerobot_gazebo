@@ -1359,6 +1359,34 @@
     <child link="head_camera_depth_optical_frame"/>
   </joint>
 
+  <!-- Intel RealSense D455 RGBD camera on the head -->
+  <gazebo reference="head_camera_link">
+    <sensor name="head_rgbd" type="rgbd_camera">
+      <camera>
+        <horizontal_fov>1.51844</horizontal_fov>
+        <image>
+          <width>1280</width>
+          <height>720</height>
+          <format>R8G8B8</format>
+        </image>
+        <depth_camera>
+          <clip>
+            <near>0.4</near>
+            <far>6.0</far>
+          </clip>
+        </depth_camera>
+        <clip>
+          <near>0.1</near>
+          <far>100.0</far>
+        </clip>
+      </camera>
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <visualize>true</visualize>
+      <topic>head_camera</topic>
+    </sensor>
+  </gazebo>
+
   <ros2_control name="XLeRobotSystem" type="system">
     <hardware>
       <plugin>gz_ros2_control/GazeboSimSystem</plugin>

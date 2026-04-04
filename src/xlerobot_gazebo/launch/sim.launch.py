@@ -85,6 +85,18 @@ def launch_setup(context, *args, **kwargs):
         arguments=["/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"],
     )
 
+    camera_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        output="screen",
+        arguments=[
+            "/head_camera/image@sensor_msgs/msg/Image[gz.msgs.Image",
+            "/head_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image",
+            "/head_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
+            "/head_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+        ],
+    )
+
     if backend == "omni":
         command_bridge = Node(
             package="xlerobot_gazebo",
@@ -280,6 +292,7 @@ def launch_setup(context, *args, **kwargs):
         gazebo,
         robot_state_publisher,
         clock_bridge,
+        camera_bridge,
         command_bridge,
         odom_bridge,
         official_base_adapter,
